@@ -3,6 +3,6 @@ __pycache__/
 .venv/
 venv/
 *.duckdb
-data/raw/*.csv
+data/raw/**
 !data/raw/.gitkeep
 .pytest_cache/
