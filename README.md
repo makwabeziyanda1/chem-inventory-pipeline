@@ -40,15 +40,43 @@ generator/  -->  data/raw/  -->  pipeline/ingest.py   -->  pipeline/validate.py
 
 ## Status
 
-Day 1: repo scaffolding + warehouse schema (`schema/schema.sql`) committed.
-Pipeline scripts land over the following days — see commit history for
-progress.
+The pipeline is complete: generator, ingest, validate, transform, load,
+and reports all have test coverage (`pytest`), and `make all` runs the
+whole thing end to end. See the commit history and closed issues for how
+it was built, day by day.
 
 ## Running it
 
-Not runnable yet — `pipeline/` and `generator/` are still empty. This
-section will be filled in once `make all` actually works end to end.
+```
+python -m venv .venv
+source .venv/Scripts/activate   # or .venv\Scripts\activate on Windows cmd
+make install
+make all       # generate synthetic data, run the pipeline, print the reports
+make test      # run the test suite
+```
+
+`make all` chains three steps you can also run separately:
+
+- `make generate` — writes synthetic reference + daily delivery/usage CSVs into `data/raw/`
+- `make run` — ingests, validates, transforms, and loads `data/raw/` into `warehouse.duckdb`
+- `make report` — prints consumption trends, expiry risk, and reorder points from the warehouse
+
+Rows that fail validation aren't dropped — they land in the `rejected_records`
+table with a reason, queryable straight from `warehouse.duckdb`.
 
 ## Demo video
 
-Coming soon — will be linked here once the pipeline is complete.
+[Link to be added once recorded]
+
+## Design decisions
+
+- **DuckDB, not Postgres** — a single-file warehouse is enough at this
+  scale and needs no infrastructure to run or grade.
+- **Plain scripts + Makefile, not Airflow** — the pipeline is small enough
+  that an orchestrator would add setup risk without adding clarity.
+- **Synthetic data, not real records** — avoids needing proprietary mine
+  data, and the generator deliberately corrupts ~8% of rows so validation
+  has real problems to catch instead of clean data it can never fail on.
+- **ADJUSTMENT movements are modeled as downward-only** — the raw schema
+  has no direction field for stock corrections; documented as a known
+  simplification in `pipeline/transform.py` rather than silently assumed.
